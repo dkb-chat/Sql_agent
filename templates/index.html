@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive  SQL AI Database Chatbot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        /* Default (Light) Mode Styles */
+        body {
+            background-color: #f0f0f0;
+            font-family: "Inter", sans-serif;
+            color: #333;
+            overflow: hidden;
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #1e1e1e;
+            color: #e5e5e5;
+        }
+
+        .chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            display: none;
+            z-index: 1000;
+            transition: height 0.3s ease, width 0.3s ease, top 0.3s ease, left 0.3s ease, background-color 0.3s
+                ease, color 0.3s ease;
+            /* Added transition for dark mode */
+        }
+
+        .dark-mode .chat-container {
+            background: #2c2c2c;
+            color: #e5e5e5;
+        }
+
+        .chat-container.expanded {
+            width: 600px;
+        }
+
+        .chat-container.fullscreen {
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            border-radius: 0;
+            max-width: none;
+            max-height: none;
+            box-shadow: none;
+            z-index: 1001;
+        }
+
+        .chat-header {
+            background: linear-gradient(to right, #001dfb, #1732fc);
+            color: white;
+            padding: 12px 15px;
+            text-align: center;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .chat-header.fullscreen {
+            border-radius: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: white;
+            font-size: 20px;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .close-btn:hover {
+            transform: rotate(90deg);
+        }
+
+        .chat-box {
+            height: 420px;
+            overflow-y: auto;
+            padding: 15px;
+            background: #eee;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dark-mode .chat-box {
+            background: #252525;
+        }
+
+        .chat-message {
+            padding: 10px 12px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            max-width: 85%;
+            word-wrap: break-word;
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.4;
+            display: inline-block;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            background: #212df3;
+            color: white;
+            align-self: flex-end;
+            text-align: right;
+            border-bottom-right-radius: 4px;
+        }
+
+        .ai-message {
+            background: #ddd;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .dark-mode .ai-message {
+            background: #3a3a3a;
+            color: #e5e5e5;
+        }
+
+        .suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .suggestion {
+            background: #ddd;
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease-in-out, color 0.3s ease;
+        }
+
+        .dark-mode .suggestion {
+            background: #3a3a3a;
+            color: #e5e5e5;
+        }
+
+        .suggestion:hover {
+            background: #bbb;
+            transform: scale(1.1);
+        }
+
+        .dark-mode .suggestion:hover {
+            background: #4a4a4a;
+        }
+
+        .chat-footer {
+            display: flex;
+            padding: 10px 12px;
+            background: #fff;
+            border-top: 1px solid #ccc;
+            align-items: center;
+            animation: slideInUp 0.5s ease-out;
+        }
+
+        .dark-mode .chat-footer {
+            background: #2c2c2c;
+            border-top: 1px solid #444;
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .chat-footer input {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            background: #eee;
+            color: #333;
+            outline: none;
+            font-size: 13px;
+            transition: border 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .dark-mode .chat-footer input {
+            border: 1px solid #444;
+            background: #252525;
+            color: #e5e5e5;
+        }
+
+        .chat-footer input:focus {
+            border: 1px solid #212df3;
+        }
+
+        .send-btn {
+            background: #212df3;
+            border: none;
+            cursor: pointer;
+            margin-left: 8px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease, transform 0.2s ease-in-out;
+        }
+
+        .send-btn:hover {
+            background: #001dfb;
+            transform: scale(1.1);
+        }
+
+        .send-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: white;
+        }
+
+        .ai-icon {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #212df3;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+            transition: transform 0.3s ease;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .ai-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .ai-icon svg {
+            width: 30px;
+            height: 30px;
+            fill: white;
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            align-self: flex-start;
+            background: #ddd;
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .dark-mode .typing-indicator {
+            background: #3a3a3a;
+            color: #e5e5e5;
+        }
+
+        .typing-indicator span {
+            height: 8px;
+            width: 8px;
+            background: #777;
+            display: block;
+            border-radius: 50%;
+            margin: 0 2px;
+            opacity: 0.4;
+            animation: typing 1s infinite;
+        }
+
+        @keyframes typing {
+            0% {
+                opacity: 0.4;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+
+            100% {
+                opacity: 0.4;
+                transform: scale(1);
+            }
+        }
+
+        @media (max-width: 576px) {
+            .chat-container {
+                width: 90%;
+                bottom: 80px;
+                right: 5%;
+                left: 5%;
+            }
+        }
+
+        /* Enhanced Table Styling */
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+        }
+
+        .dark-mode .table-container {
+            border-color: #444;
+        }
+
+        .interactive-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.9em;
+            font-family: sans-serif;
+            animation: fadeInTable 0.5s ease-in-out;
+        }
+
+        @keyframes fadeInTable {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .interactive-table thead {
+            background-color: #3f51b5;
+            color: white;
+            text-align: left;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .interactive-table th,
+        .interactive-table td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        .interactive-table th {
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .interactive-table tbody tr {
+            border-bottom: 1px solid #ddd;
+        }
+
+        .dark-mode .interactive-table tbody tr {
+            border-bottom: 1px solid #444;
+        }
+
+        .interactive-table tbody tr:nth-of-type(even) {
+            background-color: #f2f2f2;
+        }
+
+        .dark-mode .interactive-table tbody tr:nth-of-type(even) {
+            background-color: #333;
+            color: #eee;
+        }
+
+        .interactive-table tbody tr:last-of-type {
+            border-bottom: 2px solid #3f51b5;
+        }
+
+        .interactive-table tbody tr:hover {
+            background-color: #ddd;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .dark-mode .interactive-table tbody tr:hover {
+            background-color: #555;
+        }
+
+        /* Add spacing and line between cells */
+        .interactive-table th,
+        .interactive-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #ddd; /* Add line */
+        }
+
+        .dark-mode .interactive-table th,
+        .dark-mode .interactive-table td {
+            border-bottom: 1px solid #444; /* Dark mode line */
+        }
+
+        /* Expand Button */
+        .expand-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: white;
+            font-size: 20px;
+            margin-right: 10px;
+        }
+
+        /* Fullscreen button style */
+        .fullscreen-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: white;
+            font-size: 20px;
+            margin-right: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .fullscreen-btn:hover {
+            transform: scale(1.2);
+        }
+
+        /* Dark Mode Toggle Button */
+        .dark-mode-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: white;
+            font-size: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .dark-mode-toggle:hover {
+            transform: scale(1.2);
+        }
+
+        /* Style for the conversational output */
+        .conversational-output {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .dark-mode .conversational-output {
+            border: 1px solid #444;
+            background-color: #2c2c2c;
+            color: #e5e5e5;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ai-icon" id="chat-icon" onclick="toggleChat()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path
+                d="M12 1c-6.338 0-12 4.226-12 10.007 0 2.05.739 4.063 2.047 5.625l-1.993 6.368 6.946-3c1.705.439 3.334.641 4.864.641 7.174 0 12.136-4.439 12.136-9.634 0-5.812-5.701-10.007-12-10.007zm0 1c5.691 0 11 3.763 11 9.007 0 4.455-4.453 8.634-11.136 8.634-1.617 0-3.146-.227-4.576-.614l-3.783 1.636 1.105-3.523c-1.537-1.463-2.61-3.513-2.61-6.134 0-5.244 5.309-9.007 11-9.007zm-5 7.5c0-.828.672-1.5 1.5-1.5s1.5.672 1.5 1.5-.672 1.5-1.5 1.5-1.5-.672-1.5-1.5zm4 0c0-.828.672-1.5 1.5-1.5s1.5.672 1.5 1.5-.672 1.5-1.5 1.5-1.5-.672-1.5-1.5zm4 0c0-.828.672-1.5 1.5-1.5s1.5.672 1.5 1.5-.672 1.5-1.5 1.5-1.5-.672-1.5-1.5z">
+            </path>
+        </svg>
+    </div>
+    <div class="chat-container" id="chat-container">
+        <div class="chat-header">
+            SQL AGENTIC AI
+            <div>
+                <button class="dark-mode-toggle" onclick="toggleDarkMode()">☾</button>
+                <!-- Dark Mode Toggle -->
+                <button class="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
+                <!-- Fullscreen Button -->
+                <button class="expand-btn" onclick="toggleExpand()">⇱</button>
+                <!-- Expand Width Button -->
+                <button class="close-btn" onclick="toggleChat()">×</button>
+            </div>
+        </div>
+        <div class="chat-box" id="chat-box">
+            <div class="chat-message ai-message">
+                Hello! Welcome to the Interactive SQL AGENTIC AI. How can I assist you today? 😊
+                <div class="suggestions">
+                    <div class="suggestion"
+                        onclick="sendSuggestion('Tell me about recent purchase orders')">Recent Purchases</div>
+                    <div class="suggestion" onclick="sendSuggestion('Which vendors have the highest sales?')">Top Sales
+                    </div>
+                    <div class="suggestion" onclick="sendSuggestion('Show me the average payment terms')">Avg Payment
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" id="user-input" placeholder="Ask about your database..."
+                onkeypress="handleKeyPress(event)">
+            <button class="send-btn" onclick="sendMessage()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let isExpanded = false;
+        let isFullscreen = false; // Track fullscreen state
+        let darkMode = false; // Track dark mode state
+
+        function toggleChat() {
+            const chatContainer = document.getElementById("chat-container");
+            const isHidden = chatContainer.style.display !== "block";
+            chatContainer.style.display = isHidden ? "block" : "none";
+        }
+
+        function sendSuggestion(suggestion) {
+            document.getElementById("user-input").value = suggestion;
+            sendMessage();
+        }
+
+        function sendMessage() {
+            const userInput = document.getElementById("user-input").value.trim();
+            if (!userInput) return;
+
+            addMessage(userInput, "user-message");
+            document.getElementById("user-input").value = "";
+
+            addMessage("Thinking...", "ai-message", false, true);
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: userInput })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    removeTypingIndicator();
+                    if (data.error) {
+                        addMessage(data.error, "ai-message");
+                    } else {
+                        addTableMessage(data.formatted_response);
+                        updateSuggestions(userInput);
+                    }
+                })
+                .catch(() => {
+                    removeTypingIndicator();
+                    addMessage("Sorry, I encountered an error while processing your request.", "ai-message");
+                });
+        }
+
+        function addMessage(content, className, isHTML = false, isTyping = false) {
+            const chatBox = document.getElementById("chat-box");
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("chat-message", className);
+
+            if (isTyping) {
+                messageDiv.classList.add("typing-indicator");
+                messageDiv.innerHTML = '<span></span><span></span><span></span>';
+            } else if (isHTML) {
+                messageDiv.innerHTML = content;
+            } else {
+                messageDiv.textContent = content;
+            }
+
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        function addTableMessage(formattedResponse) {
+            const chatBox = document.getElementById("chat-box");
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("chat-message", "ai-message");
+            messageDiv.innerHTML = formattedResponse; // Directly set the HTML
+
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const chatBox = document.getElementById("chat-box");
+            const typingIndicator = chatBox.querySelector(".typing-indicator:last-child");
+            if (typingIndicator) {
+                chatBox.removeChild(typingIndicator);
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function toggleExpand() {
+            const chatContainer = document.getElementById("chat-container");
+            isExpanded = !isExpanded;
+            chatContainer.classList.toggle("expanded", isExpanded);
+
+            // Optional: Adjust height based on expanded state, if needed
+            chatContainer.style.height = isExpanded ? "700px" : "580px";
+        }
+
+        function updateSuggestions(userInput) {
+            const suggestionsDiv = document.querySelector('.suggestions');
+            suggestionsDiv.innerHTML = ''; // Clear existing suggestions
+
+            const newSuggestions = [
+                `What are the top vendors related to "${userInput}"?`,
+                `Can you summarize the results for "${userInput}"?`,
+                `Show me the trends related to "${userInput}"`
+            ];
+
+            newSuggestions.forEach(suggestionText => {
+                const suggestionElement = document.createElement('div');
+                suggestionElement.classList.add('suggestion');
+                suggestionElement.textContent = suggestionText;
+                suggestionElement.onclick = () => sendSuggestion(suggestionText);
+                suggestionsDiv.appendChild(suggestionElement);
+            });
+        }
+
+        function toggleFullscreen() {
+            const chatContainer = document.getElementById("chat-container");
+            const chatHeader = document.querySelector(".chat-header"); // Get the chat header
+
+            isFullscreen = !isFullscreen;
+            chatContainer.classList.toggle("fullscreen", isFullscreen);
+            chatHeader.classList.toggle("fullscreen", isFullscreen); // Toggle fullscreen class to the header
+
+        }
+
+        function toggleDarkMode() {
+            const body = document.body;
+            darkMode = !darkMode;
+            body.classList.toggle("dark-mode", darkMode); // Toggle dark-mode class on the body
+        }
+    </script>
+</body>
+
+</html>
